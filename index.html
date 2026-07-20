@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<!--
+  ============================================================
+  ⚠️ NOTICE — PERSONAL PROJECT, NOT FOR PUBLIC/PRODUCTION USE
+  ============================================================
+  This is the frontend for a private, personal automation project.
+  The backend (n8n workflows, Langflow agents, API keys, and auth
+  tokens) is NOT included in this repo and is NOT publicly hosted
+  for general use. Fetch calls in this file will fail without a
+  valid WEBHOOK_TOKEN pointed at the author's private n8n instance.
+
+  Interested in a custom build of a similar pipeline? This project
+  is available for hire/recreation — reach out for pricing.
+  ============================================================
+-->
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover"/>
+<title>قائمة الإعجاز العلمي — لوحة الإدخال</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=IBM+Plex+Sans+Arabic:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#09090f;
+  --surface:#111118;
+  --surface2:#16161f;
+  --surface3:#1c1c28;
+  --border:rgba(255,255,255,.07);
+  --border2:rgba(255,255,255,.12);
+  --text:#eeeef5;
+  --text2:#9898b0;
+  --text3:#5a5a78;
+  --violet:#7c3aed;
+  --violet-light:#a78bfa;
+  --pink:#db2777;
+  --cyan:#0891b2;
+  --cyan-light:#67e8f9;
+  --green:#059669;
+  --green-light:#6ee7b7;
+  --amber:#d97706;
+  --amber-light:#fcd34d;
+  --radius:14px;
+  --sidebar-w:264px;
+  --topbar-h:58px;
+  --safe-b:env(safe-area-inset-bottom,0px);
+  --safe-t:env(safe-area-inset-top,0px);
+}
+
+html{height:100%;overflow:hidden}
+body{height:100%;background:var(--bg);color:var(--text);font-family:'IBM Plex Sans Arabic','Tajawal',sans-serif;overflow:hidden;position:fixed;width:100%}
+
+/* ambient glow */
+.blobs{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.blob{position:absolute;border-radius:50%;filter:blur(110px);opacity:.09;animation:drift 24s ease-in-out infinite}
+.b1{width:480px;height:480px;background:#7c3aed;top:-140px;right:-100px}
+.b2{width:380px;height:380px;background:#0891b2;bottom:-100px;left:-80px;animation-delay:-9s}
+@keyframes drift{0%,100%{transform:translate(0,0)}50%{transform:translate(-24px,24px)}}
+
+.app{position:fixed;inset:0;z-index:1;display:flex;padding-top:var(--safe-t)}
+
+/* ===== SIDEBAR ===== */
+.sidebar{
+  width:var(--sidebar-w);flex-shrink:0;
+  background:rgba(17,17,24,.92);backdrop-filter:blur(28px);
+  border-left:1px solid var(--border);
+  display:flex;flex-direction:column;padding:16px 12px;
+  padding-bottom:calc(16px + var(--safe-b));
+  transition:transform .26s cubic-bezier(.4,0,.2,1);
+}
+.brand{display:flex;align-items:center;gap:10px;padding:6px 8px 20px}
+.brand-mark{width:32px;height:32px;border-radius:9px;flex-shrink:0;background:conic-gradient(from 130deg,#7c3aed,#0891b2,#059669,#7c3aed);box-shadow:0 0 16px rgba(124,58,237,.4)}
+.brand h1{font-family:'Tajawal',sans-serif;font-size:14px;font-weight:800}
+.brand-sub{font-size:10.5px;color:var(--text3);margin-top:1px;font-family:'JetBrains Mono',monospace}
+
+.nav-list{display:flex;flex-direction:column;gap:4px;flex:1}
+.nav-item{
+  display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:10px;
+  cursor:pointer;border:1px solid transparent;color:var(--text2);
+  font-size:13.5px;font-weight:600;transition:all .15s;-webkit-tap-highlight-color:transparent;
+}
+.nav-item svg{flex-shrink:0}
+.nav-item:hover{background:var(--surface3);color:var(--text)}
+.nav-item.active{background:rgba(124,58,237,.12);border-color:rgba(124,58,237,.28);color:#fff}
+.nav-badge{
+  margin-inline-start:auto;font-size:10px;font-weight:700;background:rgba(217,119,6,.18);
+  color:var(--amber-light);border-radius:20px;padding:1px 7px;min-width:18px;text-align:center;
+}
+.nav-badge:empty,.nav-badge.zero{display:none}
+
+.sidebar-footer{border-top:1px solid var(--border);padding-top:12px;margin-top:8px}
+.logout-item{
+  display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:10px;
+  cursor:pointer;color:var(--text3);font-size:13px;font-weight:600;transition:all .15s;
+}
+.logout-item:hover{background:rgba(219,39,119,.08);color:var(--pink)}
+
+/* ===== MAIN ===== */
+.main{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
+
+.topbar{
+  display:flex;align-items:center;gap:12px;padding:0 20px;height:var(--topbar-h);min-height:var(--topbar-h);
+  border-bottom:1px solid var(--border);background:rgba(9,9,15,.7);backdrop-filter:blur(16px);flex-shrink:0;
+}
+.hamburger{
+  width:34px;height:34px;display:none;align-items:center;justify-content:center;
+  background:transparent;border:1px solid var(--border);border-radius:9px;color:var(--text);
+  cursor:pointer;font-size:15px;flex-shrink:0;-webkit-tap-highlight-color:transparent;
+}
+.topbar-title{font-family:'Tajawal',sans-serif;font-size:15px;font-weight:800}
+.topbar-right{margin-inline-start:auto;display:flex;align-items:center;gap:8px}
+
+.content-scroll{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;padding:24px 20px}
+.content-inner{max-width:720px;margin:0 auto}
+.view{display:none}
+.view.active{display:block}
+
+/* ===== STAT CHIPS ===== */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+@media(max-width:640px){.stats-row{grid-template-columns:repeat(2,1fr)}}
+.stat-chip{
+  background:rgba(17,17,24,.85);backdrop-filter:blur(20px);border:1px solid var(--border);
+  border-radius:12px;padding:14px 14px;
+}
+.stat-chip .num{font-family:'Tajawal',sans-serif;font-size:22px;font-weight:800;line-height:1}
+.stat-chip .lbl{font-size:11px;color:var(--text2);margin-top:5px}
+.stat-chip.c-review .num{color:var(--amber-light)}
+.stat-chip.c-approved .num{color:var(--green-light)}
+.stat-chip.c-used .num{color:var(--cyan-light)}
+.stat-chip.c-rejected .num{color:#fca5c9}
+
+/* cards */
+.card{
+  background:rgba(17,17,24,.85);backdrop-filter:blur(24px);
+  border:1px solid var(--border);border-radius:var(--radius);
+  padding:22px;margin-bottom:18px;
+}
+.card-title{display:flex;align-items:center;gap:8px;font-family:'Tajawal',sans-serif;font-weight:800;font-size:15px;margin-bottom:16px}
+.card-title .dot{width:7px;height:7px;border-radius:50%;background:var(--violet)}
+
+/* form */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12.5px;font-weight:600;color:var(--text2);margin-bottom:6px}
+.field .hint{font-size:10.5px;color:var(--text3);margin-top:5px;line-height:1.6}
+input[type=text],textarea,select{
+  width:100%;background:var(--surface3);border:1px solid var(--border2);
+  color:var(--text);font-family:inherit;font-size:14px;border-radius:10px;
+  padding:11px 13px;outline:none;transition:border-color .15s;resize:vertical;
+}
+input[type=text]:focus,textarea:focus,select:focus{border-color:rgba(124,58,237,.5)}
+textarea{min-height:84px;line-height:1.6}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239898b0' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:left 12px center;padding-left:34px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.row2{grid-template-columns:1fr}}
+
+.submit-btn{
+  width:100%;padding:13px;border-radius:11px;border:none;margin-top:6px;
+  background:linear-gradient(135deg,var(--violet),var(--pink));color:#fff;
+  font-family:'Tajawal',sans-serif;font-weight:700;font-size:14.5px;cursor:pointer;
+  transition:opacity .15s;display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.submit-btn:hover{opacity:.9}
+.submit-btn:disabled{opacity:.45;cursor:default}
+
+.msg{padding:11px 14px;border-radius:10px;font-size:13px;margin-top:12px;line-height:1.6;display:none}
+.msg.show{display:block}
+.msg.ok{background:rgba(5,150,105,.12);border:1px solid rgba(5,150,105,.35);color:var(--green-light)}
+.msg.err{background:rgba(219,39,119,.1);border:1px solid rgba(219,39,119,.35);color:#fca5c9}
+
+/* list */
+.list-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.refresh-btn{
+  width:30px;height:30px;border-radius:8px;border:1px solid var(--border);
+  background:transparent;color:var(--text2);cursor:pointer;display:flex;
+  align-items:center;justify-content:center;transition:all .15s;
+}
+.refresh-btn:hover{border-color:var(--border2);color:var(--text)}
+.refresh-btn.spin svg{animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.row-item{
+  border:1px solid var(--border);border-radius:12px;padding:13px 15px;
+  margin-bottom:9px;background:var(--surface2);
+}
+.row-top{display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap}
+.ref-badge{
+  font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;
+  background:rgba(124,58,237,.14);color:var(--violet-light);
+  border:1px solid rgba(124,58,237,.25);border-radius:6px;padding:2px 8px;
+}
+.status-badge{font-size:10.5px;font-weight:700;border-radius:6px;padding:2px 8px;letter-spacing:.2px}
+.status-approved{background:rgba(5,150,105,.15);color:var(--green-light);border:1px solid rgba(5,150,105,.3)}
+.status-needs_review{background:rgba(217,119,6,.15);color:var(--amber-light);border:1px solid rgba(217,119,6,.3)}
+.status-draft{background:rgba(255,255,255,.06);color:var(--text2);border:1px solid var(--border2)}
+.status-used{background:rgba(8,145,178,.15);color:var(--cyan-light);border:1px solid rgba(8,145,178,.3)}
+.status-rejected{background:rgba(219,39,119,.12);color:#fca5c9;border:1px solid rgba(219,39,119,.3)}
+.row-theme{font-size:13.5px;font-weight:600;margin-bottom:3px}
+.row-desc{font-size:12px;color:var(--text2);line-height:1.6}
+.row-actions{display:flex;gap:8px;margin-top:10px}
+.row-actions:empty{display:none}
+.row-action-btn{
+  flex:1;padding:8px 10px;border-radius:8px;border:1px solid var(--border2);
+  background:var(--surface3);color:var(--text);font-family:inherit;font-size:12.5px;
+  font-weight:600;cursor:pointer;transition:all .15s;
+}
+.row-action-btn:hover{border-color:var(--border2);filter:brightness(1.15)}
+.row-action-btn:disabled{opacity:.5;cursor:default}
+.row-action-btn.approve{background:rgba(5,150,105,.12);border-color:rgba(5,150,105,.3);color:var(--green-light)}
+.row-action-btn.reject{background:rgba(219,39,119,.1);border-color:rgba(219,39,119,.3);color:#fca5c9}
+.row-action-btn.publish{background:rgba(8,145,178,.12);border-color:rgba(8,145,178,.3);color:var(--cyan-light)}
+.row-expand-btn{
+  background:none;border:none;color:var(--violet-light);font-family:inherit;
+  font-size:11.5px;font-weight:600;cursor:pointer;padding:4px 0;margin-top:2px;
+}
+.row-expand-btn:hover{text-decoration:underline}
+.row-del-btn{
+  margin-inline-start:auto;width:24px;height:24px;border-radius:6px;border:1px solid var(--border);
+  background:transparent;color:var(--text3);cursor:pointer;font-size:13px;line-height:1;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s;
+}
+.row-del-btn:hover{background:rgba(219,39,119,.1);border-color:rgba(219,39,119,.3);color:var(--pink)}
+.row-del-btn:disabled{opacity:.5;cursor:default}
+.show-all-btn{
+  font-size:11.5px;font-weight:600;color:var(--text2);background:var(--surface2);
+  border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;transition:all .15s;
+}
+.show-all-btn:hover{border-color:var(--border2);color:var(--text)}
+.empty-note{font-size:12.5px;color:var(--text3);text-align:center;padding:20px 0}
+
+/* video approval */
+.video-card{
+  border:1px solid var(--border);border-radius:12px;padding:14px;
+  margin-bottom:14px;background:var(--surface2);
+}
+.video-card video{
+  width:100%;max-height:420px;border-radius:9px;background:#000;
+  display:block;margin-top:10px;margin-bottom:12px;
+}
+.video-card-actions{display:flex;gap:8px}
+
+/* video library */
+.library-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+@media(max-width:640px){.library-grid{grid-template-columns:1fr}}
+.library-card{
+  border:1px solid var(--border);border-radius:14px;overflow:hidden;
+  background:var(--surface2);transition:border-color .2s,transform .2s;
+}
+.library-card:hover{border-color:rgba(124,58,237,.35);transform:translateY(-2px)}
+.library-card video{width:100%;display:block;background:#000;aspect-ratio:9/16;max-height:360px;object-fit:contain}
+.library-card-body{padding:14px 15px}
+.library-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.library-card-date{font-size:10.5px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+.download-btn{
+  display:flex;align-items:center;justify-content:center;gap:7px;width:100%;
+  padding:10px;border-radius:9px;border:none;margin-top:10px;text-decoration:none;
+  background:linear-gradient(135deg,var(--green),var(--cyan));color:#fff;
+  font-family:'Tajawal',sans-serif;font-weight:700;font-size:13px;cursor:pointer;
+  transition:opacity .15s;
+}
+.download-btn:hover{opacity:.88}
+
+/* ===== OVERLAY (mobile sidebar backdrop) ===== */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:10}
+.overlay.visible{display:block}
+
+/* ===== MOBILE ===== */
+@media(max-width:840px){
+  .sidebar{
+    position:fixed;top:0;right:0;bottom:0;z-index:20;
+    transform:translateX(100%);width:min(280px,84vw);
+    padding-top:calc(16px + var(--safe-t));padding-bottom:calc(16px + var(--safe-b));
+  }
+  .sidebar.open{transform:translateX(0);box-shadow:-6px 0 32px rgba(0,0,0,.5)}
+  .hamburger{display:flex}
+  .content-scroll{padding:18px 14px}
+  .topbar{padding:0 14px}
+}
+
+/* ===== AUTH GATE ===== */
+#authGate{
+  position:fixed;inset:0;z-index:100;background:rgba(9,9,15,.96);
+  backdrop-filter:blur(18px);display:flex;align-items:center;justify-content:center;padding:20px;
+}
+#authGate.hidden{display:none}
+.auth-card{
+  width:100%;max-width:340px;background:var(--surface2);
+  border:1px solid var(--border2);border-radius:16px;padding:30px 26px;
+  display:flex;flex-direction:column;gap:16px;
+}
+.auth-logo{display:flex;align-items:center;gap:10px;justify-content:center;margin-bottom:2px}
+.auth-logo-mark{width:30px;height:30px;border-radius:9px;background:conic-gradient(from 130deg,#7c3aed,#0891b2,#059669,#7c3aed);box-shadow:0 0 16px rgba(124,58,237,.4)}
+.auth-logo-name{font-family:'Tajawal',sans-serif;font-size:14.5px;font-weight:800}
+.auth-heading{font-size:16px;font-weight:700;text-align:center}
+.auth-sub{font-size:12px;color:var(--text2);text-align:center;line-height:1.6}
+.auth-input{
+  background:var(--surface3);border:1px solid var(--border2);color:var(--text);
+  font-family:inherit;font-size:16px;padding:12px 14px;border-radius:10px;
+  outline:none;text-align:center;letter-spacing:3px;
+}
+.auth-input:focus{border-color:rgba(124,58,237,.5)}
+.auth-btn{
+  padding:12px;border-radius:10px;border:none;background:linear-gradient(135deg,var(--violet),var(--pink));
+  color:#fff;font-family:'Tajawal',sans-serif;font-weight:700;font-size:14px;cursor:pointer;
+}
+.auth-btn:disabled{opacity:.5}
+.auth-err{font-size:12px;color:#fca5c9;text-align:center;min-height:16px}
+</style>
+</head>
+<body>
+
+<div class="blobs"><div class="blob b1"></div><div class="blob b2"></div></div>
+
+<!-- ===== AUTH GATE ===== -->
+<div id="authGate">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <div class="auth-logo-mark"></div>
+      <span class="auth-logo-name">قائمة الإعجاز العلمي</span>
+    </div>
+    <div class="auth-heading">أدخل كلمة المرور</div>
+    <div class="auth-sub">هذه اللوحة تضيف مباشرة إلى جدول المحتوى — الوصول محدود بكلمة مرور.</div>
+    <input type="text" id="passcodeInput" class="auth-input" placeholder="••••••" autocomplete="off"/>
+    <button class="auth-btn" id="passcodeBtn">دخول</button>
+    <div class="auth-err" id="authErr"></div>
+  </div>
+</div>
+
+<!-- ===== MAIN APP ===== -->
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark"></div>
+      <div>
+        <h1>قائمة الإعجاز العلمي</h1>
+        <div class="brand-sub">لوحة الإدخال · v1.2</div>
+      </div>
+    </div>
+
+    <nav class="nav-list">
+      <div class="nav-item active" id="navAdd" data-view="add">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        إضافة فيديو جديد
+      </div>
+      <div class="nav-item" id="navQueue" data-view="queue">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+        قائمة الانتظار
+        <span class="nav-badge zero" id="navQueueBadge">0</span>
+      </div>
+      <div class="nav-item" id="navVideos" data-view="videos">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>
+        مراجعة الفيديوهات
+        <span class="nav-badge zero" id="navVideosBadge">0</span>
+      </div>
+      <div class="nav-item" id="navLibrary" data-view="library">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+        مكتبة الفيديوهات
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="logout-item" id="logoutBtn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        تسجيل الخروج
+      </div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <button class="hamburger" id="hamburgerBtn" aria-label="فتح القائمة">☰</button>
+      <div class="topbar-title" id="topbarTitle">إضافة فيديو جديد</div>
+      <div class="topbar-right" id="topbarRight"></div>
+    </div>
+
+    <div class="content-scroll">
+      <div class="content-inner">
+
+        <!-- ===== VIEW: ADD ===== -->
+        <section class="view active" id="view-add">
+          <div class="card">
+            <div class="card-title"><span class="dot"></span> إضافة فيديو جديد</div>
+
+            <div class="field">
+              <label>السورة</label>
+              <select id="fSurah"></select>
+            </div>
+
+            <div class="row2">
+              <div class="field">
+                <label>نوع المرجع</label>
+                <select id="fRefType">
+                  <option value="single">آية واحدة</option>
+                  <option value="range">عدة آيات (نطاق)</option>
+                </select>
+              </div>
+              <div class="field" id="ayahSingleWrap">
+                <label>رقم الآية فقط (بدون رقم السورة)</label>
+                <input type="text" inputmode="numeric" id="fAyah" placeholder="مثال: 40" dir="ltr" style="text-align:left" maxlength="3"/>
+              </div>
+              <div class="field" id="ayahRangeWrap" style="display:none">
+                <label>من آية — إلى آية</label>
+                <div style="display:flex;gap:8px">
+                  <input type="text" inputmode="numeric" id="fAyahFrom" placeholder="من" dir="ltr" style="text-align:left"/>
+                  <input type="text" inputmode="numeric" id="fAyahTo" placeholder="إلى" dir="ltr" style="text-align:left"/>
+                </div>
+              </div>
+            </div>
+            <div class="hint" id="ayahRangeHint" style="margin-top:-6px;margin-bottom:10px"></div>
+
+            <div class="field" id="ayahPreviewWrap" style="display:none">
+              <label>نص الآية (من alquran.cloud)</label>
+              <div id="ayahPreviewBox" style="
+                background:var(--surface3);border:1px solid var(--border2);border-radius:10px;
+                padding:14px 16px;font-size:16px;line-height:2.1;text-align:right;min-height:52px;
+                font-family:'IBM Plex Sans Arabic','Tajawal',sans-serif;color:var(--text);
+              "></div>
+            </div>
+
+            <div class="field">
+              <label>الموضوع العلمي</label>
+              <input type="text" id="fTheme" placeholder="مثال: أطوار خلق الجنين"/>
+            </div>
+
+            <div class="field">
+              <label>الشرح العلمي</label>
+              <textarea id="fExplanation" placeholder="اشرح وجه الإعجاز العلمي المرتبط بالآية…"></textarea>
+            </div>
+
+            <div class="row2">
+              <div class="field">
+                <label>المرجع العلمي</label>
+                <input type="text" id="fSource" placeholder="مصدر أو مرجع علمي موثّق"/>
+              </div>
+              <div class="field">
+                <label>حساسية المحتوى المرئي</label>
+                <select id="fSensitivity">
+                  <option value="safe">آمن — مشاهد طبيعية</option>
+                  <option value="needs_animation">يحتاج رسوم متحركة (مثل الأجنة)</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>كلمات مفتاحية للمشاهد المرئية</label>
+              <input type="text" id="fKeywords" placeholder="مثال: مجرة، فضاء، نجوم — مفصولة بفواصل"/>
+            </div>
+
+            <button class="submit-btn" id="submitBtn">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              إضافة إلى القائمة
+            </button>
+
+            <div class="msg" id="formMsg"></div>
+          </div>
+        </section>
+
+        <!-- ===== VIEW: QUEUE ===== -->
+        <section class="view" id="view-queue">
+          <div class="stats-row">
+            <div class="stat-chip c-review"><div class="num" id="statReview">0</div><div class="lbl">بانتظار المراجعة</div></div>
+            <div class="stat-chip c-approved"><div class="num" id="statApproved">0</div><div class="lbl">معتمد</div></div>
+            <div class="stat-chip c-used"><div class="num" id="statUsed">0</div><div class="lbl">تم النشر</div></div>
+            <div class="stat-chip c-rejected"><div class="num" id="statRejected">0</div><div class="lbl">مرفوض</div></div>
+          </div>
+
+          <div class="card">
+            <div class="list-header">
+              <div class="card-title" style="margin-bottom:0"><span class="dot" style="background:var(--cyan)"></span> <span id="listTitle">آخر 20 إدخال</span></div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <button class="show-all-btn" id="showAllBtn">عرض الكل</button>
+                <button class="refresh-btn" id="refreshBtn" title="تحديث">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+                </button>
+              </div>
+            </div>
+            <div id="listArea"><div class="empty-note">جارِ التحميل…</div></div>
+          </div>
+        </section>
+
+        <!-- ===== VIEW: VIDEOS ===== -->
+        <section class="view" id="view-videos">
+          <div class="card">
+            <div class="list-header">
+              <div class="card-title" style="margin-bottom:0"><span class="dot" style="background:var(--amber)"></span> فيديوهات بانتظار المراجعة</div>
+              <button class="refresh-btn" id="refreshVideosBtn" title="تحديث">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              </button>
+            </div>
+            <div id="videoListArea"><div class="empty-note">جارِ التحميل…</div></div>
+          </div>
+        </section>
+
+        <!-- ===== VIEW: LIBRARY ===== -->
+        <section class="view" id="view-library">
+          <div class="card">
+            <div class="list-header">
+              <div class="card-title" style="margin-bottom:0"><span class="dot" style="background:var(--green)"></span> مكتبة الفيديوهات المنشورة</div>
+              <button class="refresh-btn" id="refreshLibraryBtn" title="تحديث">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              </button>
+            </div>
+            <div id="libraryGrid" class="library-grid"><div class="empty-note">جارِ التحميل…</div></div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </main>
+
+  <div class="overlay" id="overlay"></div>
+</div>
+
+<script>
+/* =====================================================
+   CONFIG — set your n8n webhook base URL here
+   ===================================================== */
+const WEBHOOK_TOKEN = "PASTE_YOUR_N8N_HEADER_AUTH_SECRET_HERE";
+const CONFIG = {
+  n8n_base: "https://n8n.stellarapp.cc/webhook", // adjust if your webhook prefix differs
+  auth_check_path: "/quran-auth-check",
+  queue_check_path: "/quran-queue-check",
+  queue_add_path: "/quran-queue-add",
+  queue_update_status_path: "/quran-queue-update-status",
+  queue_delete_path: "/quran-queue-delete",
+  pending_videos_list_path: "/quran-pending-videos-list",
+  approve_video_path: "/quran-approve-video",
+  published_videos_list_path: "/quran-published-videos-list",
+};
+const AUTH_STORAGE_KEY = "quranQueueAuth_v1";
+const AUTH_TTL_DAYS = 7;
+
+const $ = id => document.getElementById(id);
+
+/* =====================================================
+   NAVIGATION / LAYOUT
+   ===================================================== */
+const VIEW_TITLES = { add: "إضافة فيديو جديد", queue: "قائمة الانتظار", videos: "مراجعة الفيديوهات", library: "مكتبة الفيديوهات" };
+
+function switchView(view) {
+  document.querySelectorAll(".view").forEach(v => v.classList.remove("active"));
+  $("view-" + view).classList.add("active");
+  document.querySelectorAll(".nav-item").forEach(n => n.classList.toggle("active", n.dataset.view === view));
+  $("topbarTitle").textContent = VIEW_TITLES[view] || "";
+  closeSidebar();
+  if (view === "queue") loadQueue();
+  if (view === "videos") loadPendingVideos();
+  if (view === "library") loadLibrary();
+}
+$("navAdd").addEventListener("click", () => switchView("add"));
+$("navQueue").addEventListener("click", () => switchView("queue"));
+$("navVideos").addEventListener("click", () => switchView("videos"));
+$("navLibrary").addEventListener("click", () => switchView("library"));
+
+function openSidebar()  { $("sidebar").classList.add("open");    $("overlay").classList.add("visible");    document.body.style.overflow = "hidden"; }
+function closeSidebarMobile() { $("sidebar").classList.remove("open"); $("overlay").classList.remove("visible"); document.body.style.overflow = ""; }
+function closeSidebar() { if (window.innerWidth <= 840) closeSidebarMobile(); }
+$("hamburgerBtn").onclick = openSidebar;
+$("overlay").onclick = closeSidebarMobile;
+
+/* =====================================================
+   SURAH DATA — number, Arabic name, ayah count (Kufic count,
+   same standard used by Al Quran Cloud / ar.alafasy)
+   ===================================================== */
+const SURAHS = [
+  [1,"الفاتحة",7],[2,"البقرة",286],[3,"آل عمران",200],[4,"النساء",176],[5,"المائدة",120],
+  [6,"الأنعام",165],[7,"الأعراف",206],[8,"الأنفال",75],[9,"التوبة",129],[10,"يونس",109],
+  [11,"هود",123],[12,"يوسف",111],[13,"الرعد",43],[14,"إبراهيم",52],[15,"الحجر",99],
+  [16,"النحل",128],[17,"الإسراء",111],[18,"الكهف",110],[19,"مريم",98],[20,"طه",135],
+  [21,"الأنبياء",112],[22,"الحج",78],[23,"المؤمنون",118],[24,"النور",64],[25,"الفرقان",77],
+  [26,"الشعراء",227],[27,"النمل",93],[28,"القصص",88],[29,"العنكبوت",69],[30,"الروم",60],
+  [31,"لقمان",34],[32,"السجدة",30],[33,"الأحزاب",73],[34,"سبأ",54],[35,"فاطر",45],
+  [36,"يس",83],[37,"الصافات",182],[38,"ص",88],[39,"الزمر",75],[40,"غافر",85],
+  [41,"فصلت",54],[42,"الشورى",53],[43,"الزخرف",89],[44,"الدخان",59],[45,"الجاثية",37],
+  [46,"الأحقاف",35],[47,"محمد",38],[48,"الفتح",29],[49,"الحجرات",18],[50,"ق",45],
+  [51,"الذاريات",60],[52,"الطور",49],[53,"النجم",62],[54,"القمر",55],[55,"الرحمن",78],
+  [56,"الواقعة",96],[57,"الحديد",29],[58,"المجادلة",22],[59,"الحشر",24],[60,"الممتحنة",13],
+  [61,"الصف",14],[62,"الجمعة",11],[63,"المنافقون",11],[64,"التغابن",18],[65,"الطلاق",12],
+  [66,"التحريم",12],[67,"الملك",30],[68,"القلم",52],[69,"الحاقة",52],[70,"المعارج",44],
+  [71,"نوح",28],[72,"الجن",28],[73,"المزمل",20],[74,"المدثر",56],[75,"القيامة",40],
+  [76,"الإنسان",31],[77,"المرسلات",50],[78,"النبأ",40],[79,"النازعات",46],[80,"عبس",42],
+  [81,"التكوير",29],[82,"الانفطار",19],[83,"المطففين",36],[84,"الانشقاق",25],[85,"البروج",22],
+  [86,"الطارق",17],[87,"الأعلى",19],[88,"الغاشية",26],[89,"الفجر",30],[90,"البلد",20],
+  [91,"الشمس",15],[92,"الليل",21],[93,"الضحى",11],[94,"الشرح",8],[95,"التين",8],
+  [96,"العلق",19],[97,"القدر",5],[98,"البينة",8],[99,"الزلزلة",8],[100,"العاديات",11],
+  [101,"القارعة",11],[102,"التكاثر",8],[103,"العصر",3],[104,"الهمزة",9],[105,"الفيل",5],
+  [106,"قريش",4],[107,"الماعون",7],[108,"الكوثر",3],[109,"الكافرون",6],[110,"النصر",3],
+  [111,"المسد",5],[112,"الإخلاص",4],[113,"الفلق",5],[114,"الناس",6]
+];
+function surahAyahCount(num) { const s = SURAHS.find(x => x[0] === num); return s ? s[2] : null; }
+
+function populateSurahSelect() {
+  const sel = $("fSurah");
+  sel.innerHTML = SURAHS.map(([num, name]) => `<option value="${num}">${num} — ${name}</option>`).join("");
+}
+populateSurahSelect();
+
+function updateAyahHint() {
+  const num = parseInt($("fSurah").value, 10);
+  const count = surahAyahCount(num);
+  $("ayahRangeHint").textContent = count ? `عدد آيات هذه السورة: ${count}` : "";
+}
+$("fSurah").addEventListener("change", updateAyahHint);
+updateAyahHint();
+
+function toggleRefType() {
+  const isRange = $("fRefType").value === "range";
+  $("ayahSingleWrap").style.display = isRange ? "none" : "";
+  $("ayahRangeWrap").style.display = isRange ? "" : "none";
+  clearAyahPreview();
+}
+$("fRefType").addEventListener("change", toggleRefType);
+toggleRefType();
+
+/* =====================================================
+   AYAH TEXT PREVIEW — pulled verbatim from Al Quran Cloud.
+   Nothing here is generated, paraphrased, or filled in —
+   only what the API returns is ever shown.
+   ===================================================== */
+const QURAN_API = "https://api.alquran.cloud/v1/ayah";
+const QURAN_EDITION = "quran-uthmani"; // official Uthmani-script Arabic text, no reciter involved
+
+function toArabicDigits(n) {
+  const map = ["٠","١","٢","٣","٤","٥","٦","٧","٨","٩"];
+  return String(n).split("").map(d => map[d] ?? d).join("");
+}
+
+function clearAyahPreview() {
+  $("ayahPreviewWrap").style.display = "none";
+  $("ayahPreviewBox").textContent = "";
+}
+
+async function fetchAyahText(surah, ayah) {
+  const res = await fetch(`${QURAN_API}/${surah}:${ayah}/${QURAN_EDITION}`);
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  const data = await res.json();
+  if (!data || data.code !== 200 || !data.data || !data.data.text) throw new Error("no_text");
+  return data.data.text;
+}
+
+let ayahPreviewToken = 0;
+async function updateAyahPreview() {
+  const myToken = ++ayahPreviewToken; // guards against out-of-order responses
+  const surah = parseInt($("fSurah").value, 10);
+  const maxAyah = surahAyahCount(surah);
+  const isRange = $("fRefType").value === "range";
+
+  let ayahNums = [];
+  if (!isRange) {
+    const n = parseInt($("fAyah").value, 10);
+    if (n && n >= 1 && (!maxAyah || n <= maxAyah)) ayahNums = [n];
+  } else {
+    const from = parseInt($("fAyahFrom").value, 10);
+    const to = parseInt($("fAyahTo").value, 10);
+    if (from && to && from >= 1 && to >= from && (!maxAyah || to <= maxAyah)) {
+      for (let n = from; n <= to; n++) ayahNums.push(n);
+    }
+  }
+
+  if (!ayahNums.length) { clearAyahPreview(); return; }
+
+  $("ayahPreviewWrap").style.display = "";
+  $("ayahPreviewBox").textContent = "جارِ جلب النص من alquran.cloud…";
+
+  try {
+    const texts = await Promise.all(ayahNums.map(n => fetchAyahText(surah, n)));
+    if (myToken !== ayahPreviewToken) return; // a newer request superseded this one
+    const marked = texts.map((t, i) => `${t} ﴿${toArabicDigits(ayahNums[i])}﴾`);
+    $("ayahPreviewBox").textContent = marked.join(" ");
+  } catch (err) {
+    if (myToken !== ayahPreviewToken) return;
+    $("ayahPreviewBox").textContent = "تعذر جلب النص من alquran.cloud — تحقق من الاتصال وحاول مرة أخرى.";
+  }
+}
+
+let ayahPreviewDebounce = null;
+function scheduleAyahPreview() {
+  clearTimeout(ayahPreviewDebounce);
+  ayahPreviewDebounce = setTimeout(updateAyahPreview, 350);
+}
+
+["fSurah", "fRefType"].forEach(id => $(id).addEventListener("change", scheduleAyahPreview));
+function sanitizeDigitsOnly(e) {
+  const cleaned = e.target.value.replace(/[^\d]/g, "");
+  if (cleaned !== e.target.value) e.target.value = cleaned;
+}
+["fAyah", "fAyahFrom", "fAyahTo"].forEach(id => $(id).addEventListener("input", sanitizeDigitsOnly));
+["fAyah", "fAyahFrom", "fAyahTo"].forEach(id => $(id).addEventListener("input", scheduleAyahPreview));
+
+/* =====================================================
+   AUTH GATE
+   ===================================================== */
+function getStoredAuth() {
+  try {
+    const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data.expiresAt || Date.now() > data.expiresAt) return null;
+    return data;
+  } catch { return null; }
+}
+function storeAuth() {
+  const expiresAt = Date.now() + AUTH_TTL_DAYS * 24 * 60 * 60 * 1000;
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ ok: true, expiresAt }));
+}
+function clearAuth() { localStorage.removeItem(AUTH_STORAGE_KEY); }
+
+function showApp() { $("authGate").classList.add("hidden"); loadQueue(); loadPendingVideos(); }
+function showGate() { $("authGate").classList.remove("hidden"); $("passcodeInput").value = ""; $("authErr").textContent = ""; $("passcodeInput").focus(); }
+
+async function checkPasscode(code) {
+  if (WEBHOOK_TOKEN === "PASTE_YOUR_N8N_HEADER_AUTH_SECRET_HERE") {
+    throw new Error("هذا مشروع شخصي ولا يعمل بدون إعداد خاص. للاستفسار عن نسخة مخصصة، تواصل مع المطوّر.");
+  }
+  const res = await fetch(CONFIG.n8n_base + CONFIG.auth_check_path, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "X-Quran-Token": WEBHOOK_TOKEN },
+    body: JSON.stringify({ passcode: code }),
+  });
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  const data = await res.json();
+  return !!data.ok;
+}
+
+$("passcodeBtn").onclick = submitPasscode;
+$("passcodeInput").addEventListener("keydown", e => { if (e.key === "Enter") submitPasscode(); });
+
+async function submitPasscode() {
+  const code = $("passcodeInput").value.trim();
+  if (!code) return;
+  $("passcodeBtn").disabled = true;
+  $("authErr").textContent = "";
+  try {
+    const ok = await checkPasscode(code);
+    if (ok) { storeAuth(); showApp(); }
+    else { $("authErr").textContent = "كلمة المرور غير صحيحة"; }
+  } catch (err) {
+    $("authErr").textContent = "تعذر الاتصال بالخادم (" + err.message + ")";
+  } finally {
+    $("passcodeBtn").disabled = false;
+  }
+}
+
+$("logoutBtn").addEventListener("click", () => { clearAuth(); showGate(); });
+
+/* =====================================================
+   QUEUE LIST
+   ===================================================== */
+const STATUS_LABEL = {
+  approved: "معتمد", needs_review: "يحتاج مراجعة", draft: "مسودة", used: "تم النشر", rejected: "مرفوض",
+};
+
+let queueViewMode = "recent"; // "recent" | "all"
+let queueRowsRecent = [];
+let queueRowsAll = [];
+let expandedRefs = new Set();
+
+async function loadQueue() {
+  const btn = $("refreshBtn");
+  btn.classList.add("spin");
+  $("listArea").innerHTML = `<div class="empty-note">جارِ التحميل…</div>`;
+  try {
+    const res = await fetch(CONFIG.n8n_base + CONFIG.queue_check_path, { headers: { "X-Quran-Token": WEBHOOK_TOKEN } });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    queueRowsRecent = data.rows || [];
+    queueRowsAll = data.allRows || queueRowsRecent; // falls back gracefully if backend not updated yet
+    window.__allSurahAyah = data.allSurahAyah || [];
+    updateStats();
+    renderList();
+  } catch (err) {
+    $("listArea").innerHTML = `<div class="empty-note">تعذر تحميل القائمة (${err.message})</div>`;
+  } finally {
+    btn.classList.remove("spin");
+  }
+}
+$("refreshBtn").onclick = loadQueue;
+
+function updateStats() {
+  const counts = { needs_review: 0, approved: 0, used: 0, rejected: 0 };
+  queueRowsAll.forEach(r => {
+    const k = (r.status || "").toLowerCase();
+    if (counts.hasOwnProperty(k)) counts[k]++;
+  });
+  $("statReview").textContent = counts.needs_review;
+  $("statApproved").textContent = counts.approved;
+  $("statUsed").textContent = counts.used;
+  $("statRejected").textContent = counts.rejected;
+
+  const badge = $("navQueueBadge");
+  badge.textContent = counts.needs_review;
+  badge.classList.toggle("zero", counts.needs_review === 0);
+}
+
+function renderList() {
+  const rows = queueViewMode === "all" ? queueRowsAll : queueRowsRecent;
+  $("listTitle").textContent = queueViewMode === "all" ? `كل الإدخالات (${queueRowsAll.length})` : "آخر 20 إدخال";
+  const area = $("listArea");
+  if (!rows.length) { area.innerHTML = `<div class="empty-note">لا توجد إدخالات بعد</div>`; return; }
+  area.innerHTML = "";
+  rows.forEach(r => {
+    const ref = r.surah_ayah || "";
+    const statusKey = (r.status || "").toLowerCase() || "draft";
+    const statusCls = "status-" + (STATUS_LABEL[statusKey] ? statusKey : "draft");
+    const explanation = r.scientific_explanation || "";
+    const isExpanded = expandedRefs.has(ref);
+    const needsTruncation = explanation.length > 140;
+
+    const div = document.createElement("div");
+    div.className = "row-item";
+    div.innerHTML = `
+      <div class="row-top">
+        <span class="ref-badge" dir="ltr">${escapeHtml(ref)}</span>
+        <span class="status-badge ${statusCls}">${STATUS_LABEL[statusKey] || statusKey}</span>
+        <button class="row-del-btn" data-ref="${escapeHtml(ref)}" title="حذف نهائي" aria-label="حذف">✕</button>
+      </div>
+      <div class="row-theme">${escapeHtml(r.scientific_theme || "")}</div>
+      <div class="row-desc">${escapeHtml(isExpanded || !needsTruncation ? explanation : explanation.slice(0, 140) + "…")}</div>
+      ${needsTruncation ? `<button class="row-expand-btn" data-ref="${escapeHtml(ref)}">${isExpanded ? "عرض أقل ▲" : "عرض المزيد ▼"}</button>` : ""}
+      <div class="row-actions" data-ref="${escapeHtml(ref)}"></div>
+    `;
+    const actionsEl = div.querySelector(".row-actions");
+    if (statusKey === "needs_review" || statusKey === "draft") {
+      actionsEl.innerHTML = `
+        <button class="row-action-btn approve" data-action="approved">✅ اعتماد</button>
+        <button class="row-action-btn reject" data-action="rejected">❌ رفض</button>
+      `;
+    } else if (statusKey === "approved") {
+      actionsEl.innerHTML = `<button class="row-action-btn publish" data-action="used">📤 تم النشر</button>`;
+    }
+    area.appendChild(div);
+  });
+}
+
+/* delegated click handler — list re-renders often, so bind once on the container */
+$("listArea").addEventListener("click", async (e) => {
+  const expandBtn = e.target.closest(".row-expand-btn");
+  if (expandBtn) {
+    const ref = expandBtn.dataset.ref;
+    if (expandedRefs.has(ref)) expandedRefs.delete(ref); else expandedRefs.add(ref);
+    renderList();
+    return;
+  }
+
+  const delBtn = e.target.closest(".row-del-btn");
+  if (delBtn) {
+    const ref = delBtn.dataset.ref;
+    if (!confirm(`حذف ${ref} نهائيًا من الجدول؟ لا يمكن التراجع عن هذا الإجراء.`)) return;
+    delBtn.disabled = true;
+    delBtn.textContent = "…";
+    try {
+      const res = await fetch(CONFIG.n8n_base + CONFIG.queue_delete_path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Quran-Token": WEBHOOK_TOKEN },
+        body: JSON.stringify({ surah_ayah: ref }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || data.ok === false) throw new Error("delete_failed");
+      loadQueue();
+    } catch (err) {
+      alert("تعذر حذف الصف — تحقق من الاتصال وحاول مرة أخرى.");
+      delBtn.disabled = false;
+      delBtn.textContent = "✕";
+    }
+    return;
+  }
+
+  const btn = e.target.closest(".row-action-btn");
+  if (!btn) return;
+  const wrap = btn.closest(".row-actions");
+  const surahAyah = wrap.dataset.ref;
+  const newStatus = btn.dataset.action;
+
+  if (newStatus === "used" && !confirm(`تأكيد نشر ${surahAyah}؟`)) return;
+
+  wrap.querySelectorAll("button").forEach(b => b.disabled = true);
+  btn.textContent = "جارِ التحديث…";
+
+  try {
+    const res = await fetch(CONFIG.n8n_base + CONFIG.queue_update_status_path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Quran-Token": WEBHOOK_TOKEN },
+      body: JSON.stringify({ surah_ayah: surahAyah, status: newStatus }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.ok === false) throw new Error("update_failed");
+    loadQueue();
+  } catch (err) {
+    alert("تعذر تحديث الحالة — تحقق من الاتصال وحاول مرة أخرى.");
+    wrap.querySelectorAll("button").forEach(b => b.disabled = false);
+    btn.textContent = newStatus === "used" ? "📤 تم النشر" : (newStatus === "approved" ? "✅ اعتماد" : "❌ رفض");
+  }
+});
+
+$("showAllBtn").addEventListener("click", () => {
+  queueViewMode = queueViewMode === "all" ? "recent" : "all";
+  $("showAllBtn").textContent = queueViewMode === "all" ? "عرض آخر 20 فقط" : "عرض الكل";
+  renderList();
+});
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+
+/* =====================================================
+   VIDEO APPROVAL — replaces the Telegram approve/reject step.
+   Videos live at their own URL; we just embed them directly
+   with a native <video> element, no upload/storage needed here.
+   ===================================================== */
+let pendingVideos = [];
+
+async function loadPendingVideos() {
+  const btn = $("refreshVideosBtn");
+  btn.classList.add("spin");
+  $("videoListArea").innerHTML = `<div class="empty-note">جارِ التحميل…</div>`;
+  try {
+    const res = await fetch(CONFIG.n8n_base + CONFIG.pending_videos_list_path, { headers: { "X-Quran-Token": WEBHOOK_TOKEN } });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    pendingVideos = data.videos || [];
+    $("navVideosBadge").textContent = pendingVideos.length;
+    $("navVideosBadge").classList.toggle("zero", pendingVideos.length === 0);
+    renderPendingVideos();
+  } catch (err) {
+    $("videoListArea").innerHTML = `<div class="empty-note">تعذر تحميل الفيديوهات (${err.message})</div>`;
+  } finally {
+    btn.classList.remove("spin");
+  }
+}
+$("refreshVideosBtn").onclick = loadPendingVideos;
+
+function renderPendingVideos() {
+  const area = $("videoListArea");
+  if (!pendingVideos.length) { area.innerHTML = `<div class="empty-note">لا توجد فيديوهات بانتظار المراجعة</div>`; return; }
+  area.innerHTML = "";
+  pendingVideos.forEach(v => {
+    const div = document.createElement("div");
+    div.className = "video-card";
+    div.innerHTML = `
+      <div class="row-top">
+        <span class="ref-badge" dir="ltr">${escapeHtml(v.surah_ayah || "")}</span>
+      </div>
+      <video controls preload="metadata" src="${escapeHtml(v.video_url || "")}"></video>
+      <div class="video-card-actions" data-run-id="${escapeHtml(v.run_id || "")}">
+        <button class="row-action-btn approve" data-decision="approve">✅ اعتماد ونشر</button>
+        <button class="row-action-btn reject" data-decision="reject">❌ رفض</button>
+      </div>
+    `;
+    area.appendChild(div);
+  });
+}
+
+$("videoListArea").addEventListener("click", async (e) => {
+  const btn = e.target.closest(".row-action-btn");
+  if (!btn) return;
+  const wrap = btn.closest(".video-card-actions");
+  const runId = wrap.dataset.runId;
+  const decision = btn.dataset.decision;
+
+  wrap.querySelectorAll("button").forEach(b => b.disabled = true);
+  btn.textContent = "جارِ التنفيذ…";
+
+  try {
+    const res = await fetch(CONFIG.n8n_base + CONFIG.approve_video_path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Quran-Token": WEBHOOK_TOKEN },
+      body: JSON.stringify({ run_id: runId, decision }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || data.ok === false) throw new Error("approve_failed");
+    loadPendingVideos();
+  } catch (err) {
+    alert("تعذر تنفيذ الإجراء — تحقق من الاتصال وحاول مرة أخرى.");
+    wrap.querySelectorAll("button").forEach(b => b.disabled = false);
+    btn.textContent = decision === "approve" ? "✅ اعتماد ونشر" : "❌ رفض";
+  }
+});
+
+/* =====================================================
+   VIDEO LIBRARY — full previews of already-published videos,
+   with a one-tap download for each.
+   ===================================================== */
+async function loadLibrary() {
+  const btn = $("refreshLibraryBtn");
+  btn.classList.add("spin");
+  $("libraryGrid").innerHTML = `<div class="empty-note">جارِ التحميل…</div>`;
+  try {
+    const res = await fetch(CONFIG.n8n_base + CONFIG.published_videos_list_path, { headers: { "X-Quran-Token": WEBHOOK_TOKEN } });
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    renderLibrary(data.videos || []);
+  } catch (err) {
+    $("libraryGrid").innerHTML = `<div class="empty-note">تعذر تحميل المكتبة (${err.message})</div>`;
+  } finally {
+    btn.classList.remove("spin");
+  }
+}
+$("refreshLibraryBtn").onclick = loadLibrary;
+
+function formatArabicDate(iso) {
+  if (!iso) return "";
+  try {
+    return new Date(iso).toLocaleDateString("ar-EG", { year: "numeric", month: "long", day: "numeric" });
+  } catch { return ""; }
+}
+
+function renderLibrary(videos) {
+  const grid = $("libraryGrid");
+  if (!videos.length) { grid.innerHTML = `<div class="empty-note">لا توجد فيديوهات منشورة بعد</div>`; return; }
+  grid.innerHTML = "";
+  videos.forEach(v => {
+    const url = v.video_url || "";
+    const div = document.createElement("div");
+    div.className = "library-card";
+    div.innerHTML = `
+      <video controls preload="metadata" src="${escapeHtml(url)}"></video>
+      <div class="library-card-body">
+        <div class="library-card-top">
+          <span class="ref-badge" dir="ltr">${escapeHtml(v.surah_ayah || "")}</span>
+          <span class="library-card-date">${escapeHtml(formatArabicDate(v.created_at))}</span>
+        </div>
+        <a class="download-btn" href="${escapeHtml(url)}" download target="_blank" rel="noopener">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          تحميل الفيديو
+        </a>
+      </div>
+    `;
+    grid.appendChild(div);
+  });
+}
+
+/* =====================================================
+   FORM SUBMIT
+   ===================================================== */
+function showFormMsg(text, ok) {
+  const el = $("formMsg");
+  el.textContent = text;
+  el.className = "msg show " + (ok ? "ok" : "err");
+}
+
+$("submitBtn").onclick = async () => {
+  const surahNum = parseInt($("fSurah").value, 10);
+  const maxAyah = surahAyahCount(surahNum);
+  const isRange = $("fRefType").value === "range";
+
+  let surahAyah = null;
+
+  if (!isRange) {
+    const ayah = parseInt($("fAyah").value, 10);
+    if (!ayah || ayah < 1) { showFormMsg("أدخل رقم آية صحيح.", false); return; }
+    if (maxAyah && ayah > maxAyah) {
+      showFormMsg(`رقم الآية غير صحيح — هذه السورة تحتوي على ${maxAyah} آية فقط.`, false);
+      return;
+    }
+    surahAyah = `${surahNum}:${ayah}`;
+  } else {
+    const from = parseInt($("fAyahFrom").value, 10);
+    const to = parseInt($("fAyahTo").value, 10);
+    if (!from || !to || from < 1 || to < 1) { showFormMsg("أدخل نطاق آيات صحيح.", false); return; }
+    if (from > to) { showFormMsg("رقم البداية يجب أن يكون أصغر من أو يساوي رقم النهاية.", false); return; }
+    if (maxAyah && (from > maxAyah || to > maxAyah)) {
+      showFormMsg(`النطاق غير صحيح — هذه السورة تحتوي على ${maxAyah} آية فقط.`, false);
+      return;
+    }
+    surahAyah = from === to ? `${surahNum}:${from}` : `${surahNum}:${from}-${to}`;
+  }
+
+  const payload = {
+    surah_ayah: surahAyah,
+    scientific_theme: $("fTheme").value.trim(),
+    scientific_explanation: $("fExplanation").value.trim(),
+    source_reference: $("fSource").value.trim(),
+    sensitivity_flag: $("fSensitivity").value,
+    visual_keywords: $("fKeywords").value.trim(),
+  };
+
+  if (!payload.scientific_theme || !payload.scientific_explanation) {
+    showFormMsg("يرجى تعبئة الموضوع والشرح العلمي على الأقل.", false);
+    return;
+  }
+
+  $("submitBtn").disabled = true;
+  showFormMsg("جارِ الإضافة…", true);
+
+  try {
+    const res = await fetch(CONFIG.n8n_base + CONFIG.queue_add_path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Quran-Token": WEBHOOK_TOKEN },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (res.ok && data.ok) {
+      showFormMsg("تمت إضافة الآية بنجاح ✓", true);
+      ["fTheme","fExplanation","fSource","fKeywords","fAyah","fAyahFrom","fAyahTo"].forEach(id => $(id).value = "");
+      $("fRefType").value = "single"; toggleRefType(); clearAyahPreview();
+      $("fSensitivity").value = "safe";
+      loadQueue();
+    } else {
+      showFormMsg(data.message || "تعذرت الإضافة — تحقق من البيانات.", false);
+    }
+  } catch (err) {
+    showFormMsg("تعذر الاتصال بالخادم (" + err.message + ")", false);
+  } finally {
+    $("submitBtn").disabled = false;
+  }
+};
+
+/* =====================================================
+   INIT
+   ===================================================== */
+/* Demo/showcase build: passcode gate is skipped since this repo's
+   backend isn't publicly reachable anyway (see notice at top of file).
+   Data-loading calls below will simply show "couldn't load" states,
+   which is expected — this is a UI showcase, not a live instance. */
+showApp();
+</script>
+</body>
+</html>
