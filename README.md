@@ -59,8 +59,6 @@ This is the front-end control room for an end-to-end **automated video pipeline*
 
 Just the **frontend web app** (`index.html`). The backend automation (n8n workflows, Langflow scene-planning agent, and other `.json` pipeline configs) stays private on my own infrastructure. 🔐
 
-Want to see it in action instead of reading code? Try the live app 👉 [eajaz.stellarapp.cc](https://eajaz.stellarapp.cc) ✨
-
 ---
 
 ## 🛠️ Tech Stack
